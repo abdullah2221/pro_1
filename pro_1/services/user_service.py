@@ -45,12 +45,13 @@ def create_user(email: str, password: str, role_name: str = "client"):
         role = session.exec(select(Role).where(Role.name == role_name)).first()
         if not role:
             logging.error(f"Role '{role_name}' does not exist")
+            
             raise ValueError(f"Role '{role_name}' does not exist")
 
         logging.debug(f"Creating user for {email} with role {role_name}")
-        user = User(email=email, hashed_password=hashed_password, role_id=role.id)
-        session.add(user)
+        new_user = User(email=email, hashed_password=hashed_password, role_id=role.id)
+        session.add(new_user)
         session.commit()
 
         logging.debug(f"User {email} created successfully")
-    return user
+    return new_user
