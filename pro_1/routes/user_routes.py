@@ -1,12 +1,13 @@
 from fastapi import FastAPI, HTTPException, APIRouter, Query, Depends
-from pro_1.services.user_service import create_user
+from pro_1.services.user_service import create_user,get_all_users,delete_user,update_user
 from fastapi import Body
 from typing import Optional
 
 from pro_1.models.users import User, Role
-from pro_1.config.db import create_tables, connection
-from pro_1.utils.auth import hash_password, verify_password, create_access_token, get_current_user, check_role,check_role_factory
+from pro_1.config.db import create_tables, connection,get_session
+from pro_1.utils.auth import hash_password,super_admin_required ,verify_password, create_access_token, get_current_user, check_role,check_role_factory
 from sqlmodel import Session, select
+
 from fastapi.responses import JSONResponse
 import logging
 
@@ -16,47 +17,6 @@ logging.basicConfig(level=logging.DEBUG)
 
 # ------------------- USER MANAGEMENT ENDPOINTS -------------------
 
-@router.post('/register')
-async def register_user(
-    credentials: Optional[dict] = Body(None),  # This will accept JSON body
-    # This will accept query parameters
-    email: Optional[str] = Query(None),
-    # This will accept query parameters
-    password: Optional[str] = Query(None),
-    # This will accept query parameters
-    role_name: Optional[str] = Query("client")
-):
-    # If credentials are provided in the body, use them
-    if credentials:
-        email = credentials.get("email")
-        password = credentials.get("password")
-        # Default to "client" if not in body
-        role_name = credentials.get("role_name", "client")
-
-    # Validate the presence of required fields
-    if not email or not password:
-        raise HTTPException(
-            status_code=400, detail="Email and password are required")
-
-    # Check if the user already exists in the database
-    with Session(connection) as session:
-        logging.debug(f"Checking if user with email {email} exists")
-        existing_user = session.exec(
-            select(User).where(User.email == email)).first()
-        if existing_user:
-            logging.error(f"User with email {email} already exists")
-            raise HTTPException(
-                status_code=400, detail="Email is already taken")
-
-    # User creation logic (including hashing password, etc.)
-    # Example of creating user (simplified for this case)
-    logging.debug(f"Creating user with email {email} and role {role_name}")
-    user = create_user(email=email, password=password, role_name=role_name)
-
-    logging.debug(f"User with email {email} created successfully")
-
-    # Return success message
-    return {"message": "User registered successfully", "user": user}
 
 
 @router.post('/login')
@@ -111,21 +71,69 @@ async def login(
 
 
 
+# ------------------- SUPER ADMIN CRUD -------------------
+@router.get("/users", response_model=list[User])
+async def fetch_all_users(
+    session: Session = Depends(get_session),  # Updated to get_session
+    current_user: User = Depends(get_current_user)
+):
+    super_admin_required(current_user)  # Ensure the user is a Super Admin
+    return get_all_users(session)
+
+
+
+
+
+# Update user details (Super Admin only)
+@router.put("/update_user/{user_id}")
+async def update_user_route(
+    user_id: int,
+    email: str = Query(...),
+    password: str = Query(...),
+    role_name: str = Query(...),
+    current_user: User = Depends(get_current_user)
+):
+    super_admin_required(current_user)  # Ensure the user is a Super Admin
+
+    updated_user = update_user(user_id, email, password, role_name)
+    if updated_user:
+        return {"message": f"User {user_id} updated successfully", "user": updated_user}
+    else:
+        raise HTTPException(status_code=404, detail="User not found")
+
+
+
+
+# Delete a user (Super Admin only)
+@router.delete("/delete_user/{user_id}")
+async def delete_user_route(
+    user_id: int,
+    current_user: User = Depends(get_current_user)
+):
+    super_admin_required(current_user)  # Ensure the user is a Super Admin
+
+    deleted_user = delete_user(user_id)
+    if deleted_user:
+        return {"message": f"User {user_id} deleted successfully"}
+    else:
+        raise HTTPException(status_code=404, detail="User not found")
+
 # ------------------- USER CREATION FOR ADMIN AND CLIENT -------------------
 
 @router.post('/create_simple_admin')
 async def create_simple_admin(
-    credentials: Optional[dict] = Body(None),  # This will accept JSON body
+    credentials: Optional[dict] = Body(None),
     email: Optional[str] = Query(None),
-    password: Optional[str] = Query(None)
+    password: Optional[str] = Query(None),
+    current_user: User = Depends(get_current_user)
 ):
     """Create a Simple Admin (Super Admin only)."""
-    # If credentials are provided in the body, use them
+    super_admin_required(current_user)  # Ensure the user is a Super Admin
+
     if credentials:
         email = credentials.get("email")
         password = credentials.get("password")
 
-    # Validate the presence of required fields
     if not email or not password:
         raise HTTPException(status_code=400, detail="Email and password are required")
 
@@ -136,7 +144,6 @@ async def create_simple_admin(
         if existing_user:
             raise HTTPException(status_code=400, detail="User already exists")
 
-        # Find the 'simple_admin' role
         role = session.exec(select(Role).where(Role.name == "simple_admin")).first()
         if not role:
             raise HTTPException(status_code=400, detail="Role 'simple_admin' not found")
@@ -151,20 +158,21 @@ async def create_simple_admin(
         session.commit()
         return {"message": f"Simple Admin '{email}' created successfully"}
 
-
 @router.post('/create_client')
 async def create_client(
-    credentials: Optional[dict] = Body(None),  # This will accept JSON body
+    credentials: Optional[dict] = Body(None),
     email: Optional[str] = Query(None),
-    password: Optional[str] = Query(None)
+    password: Optional[str] = Query(None),
+    current_user: User = Depends(get_current_user)
 ):
     """Create a Client (Super Admin and Simple Admin only)."""
-    # If credentials are provided in the body, use them
+    if current_user.role.name not in ["super_admin", "simple_admin"]:
+        raise HTTPException(status_code=403, detail="Access forbidden for this user")
+
     if credentials:
         email = credentials.get("email")
         password = credentials.get("password")
 
-    # Validate the presence of required fields
     if not email or not password:
         raise HTTPException(status_code=400, detail="Email and password are required")
 
@@ -175,7 +183,6 @@ async def create_client(
         if existing_user:
             raise HTTPException(status_code=400, detail="User already exists")
 
-        # Find the 'client' role
         role = session.exec(select(Role).where(Role.name == "client")).first()
         if not role:
             raise HTTPException(status_code=400, detail="Role 'client' not found")
@@ -189,7 +196,6 @@ async def create_client(
         session.add(new_user)
         session.commit()
         return {"message": f"Client '{email}' created successfully"}
-
 
 @router.get('/data')
 async def data():
