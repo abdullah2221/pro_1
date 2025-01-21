@@ -65,6 +65,7 @@ async def login(
             "access_token": access_token,
             "token_type": "bearer",
             "role": role.name,
+            "user_id":user.id,
             # Added role-based message
             "message": f"Successfully logged in as {role.name}"
         })
@@ -73,11 +74,7 @@ async def login(
 
 # ------------------- SUPER ADMIN CRUD -------------------
 @router.get("/users", response_model=list[User])
-async def fetch_all_users(
-    session: Session = Depends(get_session),  # Updated to get_session
-    current_user: User = Depends(get_current_user)
-):
-    super_admin_required(current_user)  # Ensure the user is a Super Admin
+async def fetch_all_users(session: Session = Depends(get_session)):
     return get_all_users(session)
 
 
@@ -91,9 +88,9 @@ async def update_user_route(
     email: str = Query(...),
     password: str = Query(...),
     role_name: str = Query(...),
-    current_user: User = Depends(get_current_user)
+   
 ):
-    super_admin_required(current_user)  # Ensure the user is a Super Admin
+     # Ensure the user is a Super Admin
 
     updated_user = update_user(user_id, email, password, role_name)
     if updated_user:
@@ -108,9 +105,9 @@ async def update_user_route(
 @router.delete("/delete_user/{user_id}")
 async def delete_user_route(
     user_id: int,
-    current_user: User = Depends(get_current_user)
+
 ):
-    super_admin_required(current_user)  # Ensure the user is a Super Admin
+    # Ensure the user is a Super Admin
 
     deleted_user = delete_user(user_id)
     if deleted_user:
@@ -125,10 +122,10 @@ async def create_simple_admin(
     credentials: Optional[dict] = Body(None),
     email: Optional[str] = Query(None),
     password: Optional[str] = Query(None),
-    current_user: User = Depends(get_current_user)
+
 ):
     """Create a Simple Admin (Super Admin only)."""
-    super_admin_required(current_user)  # Ensure the user is a Super Admin
+ # Ensure the user is a Super Admin
 
     if credentials:
         email = credentials.get("email")
@@ -163,12 +160,9 @@ async def create_client(
     credentials: Optional[dict] = Body(None),
     email: Optional[str] = Query(None),
     password: Optional[str] = Query(None),
-    current_user: User = Depends(get_current_user)
-):
-    """Create a Client (Super Admin and Simple Admin only)."""
-    if current_user.role.name not in ["super_admin", "simple_admin"]:
-        raise HTTPException(status_code=403, detail="Access forbidden for this user")
 
+):
+   
     if credentials:
         email = credentials.get("email")
         password = credentials.get("password")
