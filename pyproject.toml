@@ -16,12 +16,16 @@ passlib = "^1.7.4"
 bcrypt = "<4.0.0"
 pyjwt = "^2.10.1"
 starlette = ">=0.40.0,<0.42.0"
+psycopg2-binary = "^2.9.10"
 
 
 
 [tool.poetry.scripts]
 dev = "pro_1.main:start"
 
+
+[tool.poetry.group.dev.dependencies]
+alembic = "^1.14.1"
 
 [build-system]
 requires = ["poetry-core"]

@@ -7,6 +7,7 @@ load_dotenv()
 
 # Get database URL from environment variable
 connection_string = os.getenv('DB_URI')
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # Debugging print statement
 print(f"DB_URI: {connection_string}")

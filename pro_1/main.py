@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from pro_1.routes.user_routes import router as user_router
+from pro_1.routes import product_routes
 
 
 app = FastAPI()
@@ -22,6 +23,7 @@ app.add_middleware(
 
 
 app.include_router(user_router,  tags=["Users"])
+app.include_router(product_routes.router, tags=["Products"])
 
 
 @app.get('/')

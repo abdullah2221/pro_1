@@ -66,7 +66,7 @@ async def login(
             "token_type": "bearer",
             "role": role.name,
             "user_id":user.id,
-            # Added role-based message
+            "created_by":user.role_id,            # Added role-based message
             "message": f"Successfully logged in as {role.name}"
         })
 
