@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException, Body, Depends, Query,status
 from pro_1.services.product_service import create_product, get_all_products, update_product, delete_product
-from pro_1.models.product import Product
+
 from pro_1.config.db import Session, connection
 # Import check_role function
 from pro_1.utils.auth import check_role, check_role_factory
 from pro_1.config.db import get_session
-from pro_1.models.product import Product,Category
+from pro_1.models.Schemas import Product,Category
 
 import datetime
 from fastapi.responses import JSONResponse

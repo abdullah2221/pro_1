@@ -5,7 +5,7 @@ from sqlmodel import Session,select
 from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from typing import Dict
-from pro_1.models.users import User
+from pro_1.models.Schemas import User
 
 from pro_1.config.db import get_session
 SECRET_KEY = "your-secret-key"

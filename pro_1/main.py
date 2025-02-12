@@ -1,5 +1,5 @@
 from .config.db import create_tables, connection
-from .models.users import User, Role
+from .models.Schemas import User, Role
 from .config.seed import seed_roles
 import uvicorn
 from fastapi import FastAPI, HTTPException
@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from pro_1.routes.user_routes import router as user_router
 from pro_1.routes import product_routes
 
-
+from pro_1.routes import cart_routes
 app = FastAPI()
 load_dotenv()
 origins = ["*"]
@@ -25,7 +25,7 @@ app.add_middleware(
 app.include_router(user_router,  tags=["Users"])
 app.include_router(product_routes.router, tags=["Products"])
 
-
+app.include_router(cart_routes.router)
 @app.get('/')
 async def root():
     return {'message': 'Hello World'}

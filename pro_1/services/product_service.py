@@ -1,5 +1,5 @@
 from sqlmodel import Session, select
-from pro_1.models.product import Product,Category
+from pro_1.models.Schemas import Product,Category
 from typing import List
 
 import datetime

@@ -3,7 +3,7 @@ from pro_1.services.user_service import create_user,get_all_users,delete_user,up
 from fastapi import Body
 from typing import Optional
 
-from pro_1.models.users import User, Role
+from pro_1.models.Schemas import User, Role
 from pro_1.config.db import create_tables, connection,get_session
 from pro_1.utils.auth import hash_password,super_admin_required ,verify_password, create_access_token, get_current_user, check_role,check_role_factory
 from sqlmodel import Session, select

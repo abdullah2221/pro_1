@@ -1,6 +1,6 @@
 from sqlmodel import Session, select
 from pro_1.config.db import connection
-from pro_1.models.users import Role
+from pro_1.models.Schemas import Role
 
 def seed_roles():
     with Session(connection) as session:
